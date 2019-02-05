@@ -1,0 +1,99 @@
+#!/usr/bin/env python3.6
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+import signal
+import argparse
+from torrent_sorter.sorter import sort
+
+
+class PathType(object):
+    def __init__(self, exists=True, path_type="file", dash_ok=True):
+        """
+            exists: True, False, or none
+                    True: a path that does exist
+                    False: a path that does not exist, in a valid parent directory
+                    None: don"t care
+            path_type: file, dir, symlink, None, or a function returning True for valid paths
+                       None: don"t care
+            dash_ok: whether to allow "-" as stdin/stdout
+       """
+
+        assert exists in (True, False, None)
+        assert path_type in ("file", "dir", "symlink", None) or hasattr(path_type, "__call__")
+
+        self._exists = exists
+        self._type = path_type
+        self._dash_ok = dash_ok
+
+    def __call__(self, string):
+        if string == "-":
+            # the special argument "-" means sys.std{in,out}
+            if self._type == "dir":
+                raise TypeError("standard input/output (-) not allowed as directory path")
+            elif self._type == "symlink":
+                raise TypeError("standard input/output (-) not allowed as symlink path")
+            elif not self._dash_ok:
+                raise TypeError("standard input/output (-) not allowed")
+        else:
+            e = os.path.exists(string)
+            if self._exists:
+                if not e:
+                    raise TypeError("path does not exist: %s" % string)
+
+                if self._type is None:
+                    pass
+                elif self._type == "file":
+                    if not os.path.isfile(string):
+                        raise TypeError("path is not a file: %s" % string)
+                elif self._type == "symlink":
+                    if not os.path.islink(string):
+                        raise TypeError("path is not a symlink: %s" % string)
+                elif self._type == "dir":
+                    if not os.path.isdir(string):
+                        raise TypeError("path is not a directory: %s" % string)
+                elif not self._type:
+                    raise TypeError("path not valid: %s" % string)
+            else:
+                if self._exists is False and e:
+                    raise TypeError("path exists: %s" % string)
+
+                p = os.path.dirname(os.path.normpath(string)) or "."
+                if not os.path.isdir(p):
+                    raise TypeError("parent path is not a directory: %s" % p)
+                elif not os.path.exists(p):
+                    raise TypeError("parent directory does not exist: %s" % p)
+        return string
+
+
+def __setup_args():
+    parser = argparse.ArgumentParser(description="Searches source directory for anime video downloads and "
+                                                 "sorts them into directories based on the series name.")
+    parser.add_argument("--source", "-s", action="store", nargs=None,
+                        required=True,
+                        type=PathType(exists=True, path_type="dir"),
+                        dest="source", metavar="path", help="Source directory to scan for matching files.")
+    parser.add_argument("--dest", "--destination", "-d", action="store", nargs=None,
+                        required=True,
+                        type=PathType(exists=True, path_type="dir"),
+                        dest="destination", metavar="path", help="Destination directory to sort into.")
+
+    return parser.parse_args()
+
+
+# noinspection PyUnusedLocal
+def __handle_sigint(signum, frame):
+    print(os.linesep)
+    print("Interrupted.")
+    sys.exit()
+
+
+def __setup_handlers():
+    signal.signal(signal.SIGINT, __handle_sigint)
+
+
+if __name__ == "__main__":
+    __setup_handlers()
+    args = __setup_args()
+    sort(args.source, args.destination)
