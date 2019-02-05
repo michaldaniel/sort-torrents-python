@@ -55,4 +55,6 @@ If you wish to edit regex pattern the only requirement is to produce 3 groups in
 
 ### Alias
 
-Do yourself a favor and make an alias in `~/.zshrc` or `~/.bash_aliases` like `alias sort-animu="sort-torrents -s /my/path/to/animu -d /my/path/to/videos"`
+Do yourself a favor and make an alias in `~/.zshrc` or `~/.bash_aliases` like
+
+`alias sort-animu="sort-torrents -s /my/path/to/animu -d /my/path/to/videos"`
