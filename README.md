@@ -8,6 +8,8 @@ Searches source directory for video downloads and sorts them into directories ba
 2. Navigate to the repository in terminal
 3. Run `pip3 install .`
 
+By default pip3 installs it into `~/.local/bin/`, if you don't like that talk to pip.
+
 ### Upgrade
 
 1. Navigate to the repository in terminal
